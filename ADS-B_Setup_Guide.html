@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADS-B Aircraft Receiver — Setup & Configuration Guide</title>
+<style>
+  :root {
+    --accent: #1F4E79;
+    --teal: #0F6E56;
+    --amber: #BA7517;
+    --gray: #444441;
+    --lgray: #D3D1C7;
+    --code-bg: #F1EFE8;
+    --alt-row: #EBF3FB;
+    --body: #1a1a1a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    color: var(--body);
+    background: #fff;
+    line-height: 1.6;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 48px;
+  }
+  @media print {
+    body { padding: 0; max-width: 100%; }
+    .page-break { page-break-before: always; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  /* Header */
+  .doc-header { margin-bottom: 32px; }
+  .doc-title { font-size: 32px; font-weight: 700; color: var(--accent); line-height: 1.2; margin-bottom: 6px; }
+  .doc-subtitle { font-size: 18px; color: var(--gray); margin-bottom: 8px; }
+  .doc-tags { font-size: 13px; color: var(--gray); font-style: italic; }
+  .doc-rule { border: none; border-top: 3px solid var(--accent); margin: 16px 0 32px; }
+
+  /* Running header / footer simulation */
+  .running-head { display: flex; justify-content: space-between; font-size: 11px; color: var(--lgray); border-bottom: 1px solid var(--lgray); padding-bottom: 6px; margin-bottom: 24px; }
+
+  /* Section headings */
+  h1 { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin: 32px 0 8px; border-bottom: 1.5px solid var(--accent); padding-bottom: 4px; }
+  h2 { font-size: 15px; font-weight: 700; color: var(--body); margin: 24px 0 8px; }
+  h3 { font-size: 13px; font-weight: 700; color: var(--gray); margin: 18px 0 6px; }
+
+  p { margin: 0 0 10px; }
+
+  /* Lists */
+  ul, ol { margin: 0 0 10px 0; padding-left: 28px; }
+  li { margin-bottom: 4px; }
+
+  /* Code blocks */
+  .code-block { background: var(--code-bg); border-left: 3px solid var(--accent); padding: 6px 14px; margin: 4px 0; font-family: 'Courier New', Courier, monospace; font-size: 12.5px; color: var(--accent); white-space: pre-wrap; word-break: break-all; }
+  .code-block.empty { padding: 2px 14px; min-height: 4px; }
+
+  /* Notes and warnings */
+  .note { border-left: 4px solid var(--teal); padding: 8px 14px; background: #EAF5EF; color: #1a3a2a; font-style: italic; font-size: 13px; margin: 10px 0; }
+  .warning { border-left: 4px solid var(--amber); padding: 8px 14px; background: #FEF3E2; color: #4a2e00; font-style: italic; font-size: 13px; margin: 10px 0; }
+  .warning::before { content: "⚠ "; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; font-size: 13px; }
+  th { background: var(--accent); color: #fff; font-weight: 700; padding: 8px 10px; text-align: left; }
+  td { padding: 7px 10px; border: 1px solid var(--lgray); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--alt-row); }
+  .two-col-table td:first-child { background: var(--code-bg); font-weight: 600; color: var(--gray); width: 33%; }
+  tr:nth-child(even) .two-col-table td:first-child { background: #e8e4da; }
+
+  /* Gap utility */
+  .gap { margin-bottom: 14px; }
+  .gap-lg { margin-bottom: 28px; }
+
+  /* Footer */
+  .doc-footer { margin-top: 48px; border-top: 1px solid var(--lgray); padding-top: 10px; font-size: 11px; color: var(--lgray); font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="running-head">
+  <span>ADS-B Receiver Project</span>
+  <span>Setup &amp; Configuration Guide</span>
+</div>
+
+<div class="doc-header">
+  <div class="doc-title">ADS-B Aircraft Receiver</div>
+  <div class="doc-subtitle">Setup &amp; Configuration Guide</div>
+  <div class="doc-tags">RTL-SDR &nbsp;·&nbsp; Raspberry Pi &nbsp;·&nbsp; dump1090 &nbsp;·&nbsp; Python Logger &nbsp;·&nbsp; Live Dashboard</div>
+  <hr class="doc-rule">
+</div>
+
+
+<!-- ═══════════════════════════════ 1. OVERVIEW ═══════════════════════════════ -->
+<h1>1. Overview</h1>
+
+<p>This guide walks through the complete rebuild of a 1090 MHz ADS-B receiver station. The system passively monitors Mode S transponder broadcasts from commercial and general aviation aircraft, decodes position, altitude, speed, and callsign data, logs it locally, and feeds a live web dashboard.</p>
+
+<p>The stack has four layers:</p>
+<ul>
+  <li><strong>RF hardware</strong> — antenna, coax, optional LNA, RTL-SDR dongle</li>
+  <li><strong>Decoder</strong> — dump1090-fa or readsb running on Raspberry Pi</li>
+  <li><strong>Logger</strong> — Python script that polls dump1090 JSON and archives to CSV</li>
+  <li><strong>Dashboard</strong> — static GitHub Pages site consuming the logged data</li>
+</ul>
+
+<div class="note">This guide assumes a clean Raspberry Pi 4 running Raspberry Pi OS Lite (64-bit). Commands are identical on a 64-bit Pi 3B+. A regular Linux laptop works too — skip the Pi-specific steps.</div>
+
+<div class="gap-lg"></div>
+
+
+<!-- ═══════════════════════════════ 2. BOM ═══════════════════════════════ -->
+<h1>2. Bill of Materials</h1>
+
+<h2>2.1 Required Hardware</h2>
+<table>
+  <thead><tr><th>Component</th><th>Model / Notes</th><th>Est. Cost (USD)</th></tr></thead>
+  <tbody>
+    <tr><td>RTL-SDR Dongle</td><td>RTL-SDR Blog V4 (preferred) or V3 — includes TCXO, bias-T, SMA port</td><td>$30–$40</td></tr>
+    <tr><td>ADS-B Antenna</td><td>1090 MHz dedicated antenna (FlightAware, RTL-SDR Blog 1090 Mag Mount, or DIY dipole)</td><td>$15–$30</td></tr>
+    <tr><td>Raspberry Pi</td><td>Pi 4 Model B 2 GB+ or Pi 3B+. Pi 5 works but is overkill.</td><td>$35–$55</td></tr>
+    <tr><td>MicroSD Card</td><td>32 GB+ Class 10 / A1 or better (Samsung Evo or SanDisk)</td><td>$8–$12</td></tr>
+    <tr><td>SMA Coax Cable</td><td>Low-loss RG-58 or LMR-195, 1–3 m, SMA-M to SMA-F</td><td>$8–$15</td></tr>
+    <tr><td>USB Power Supply</td><td>Official Raspberry Pi 5V/3A USB-C PSU</td><td>$8–$12</td></tr>
+    <tr><td>USB-A cable</td><td>Or USB hub if running multiple dongles</td><td>$5</td></tr>
+  </tbody>
+</table>
+
+<h2>2.2 Optional but Recommended</h2>
+<table>
+  <thead><tr><th>Component</th><th>Model / Notes</th><th>Est. Cost (USD)</th></tr></thead>
+  <tbody>
+    <tr><td>Low-Noise Amplifier</td><td>FlightAware Pro Stick Plus (LNA + 1090 MHz BPF built-in) or external LNA</td><td>$20–$30</td></tr>
+    <tr><td>Band-Pass Filter</td><td>1090 MHz SAW filter (Uputronics, FA) — suppresses cellular/FM interference</td><td>$10–$20</td></tr>
+    <tr><td>SMA Bias-T Injector</td><td>If using external LNA with V3 dongle; V4 has built-in bias-T</td><td>$5–$10</td></tr>
+    <tr><td>Outdoor enclosure</td><td>IP65 weatherproof box if mounting antenna outside</td><td>$10–$20</td></tr>
+    <tr><td>Ethernet cable</td><td>More reliable than Wi-Fi for 24/7 operation</td><td>$5–$10</td></tr>
+  </tbody>
+</table>
+
+
+<!-- ═══════════════════════════════ 3. PI SETUP ═══════════════════════════════ -->
+<div class="page-break"></div>
+<h1>3. Raspberry Pi Setup</h1>
+
+<h2>3.1 Flash the OS</h2>
+<p>Download the Raspberry Pi Imager from <a href="https://raspberrypi.com/software">raspberrypi.com/software</a>. Flash <strong>Raspberry Pi OS Lite (64-bit)</strong> to the microSD card. In the Imager advanced settings (gear icon), configure:</p>
+<ul>
+  <li>Hostname: <code>adsb-station</code></li>
+  <li>Enable SSH with a strong password or public key</li>
+  <li>Set Wi-Fi SSID/password (or leave blank if using Ethernet)</li>
+  <li>Set locale and timezone to your location</li>
+</ul>
+<div class="note">OS Lite is preferred over Desktop — it uses less RAM and CPU, which dump1090 will appreciate.</div>
+
+<h2>3.2 First Boot</h2>
+<p>Insert the SD card, connect Ethernet, and power on. SSH in after ~60 seconds:</p>
+<div class="code-block">ssh pi@adsb-station.local</div>
+<p style="margin-top:10px">Update the system before installing anything:</p>
+<div class="code-block">sudo apt update && sudo apt full-upgrade -y</div>
+<div class="code-block">sudo reboot</div>
+
+
+<!-- ═══════════════════════════════ 4. RTL-SDR ═══════════════════════════════ -->
+<h1>4. RTL-SDR Driver Installation</h1>
+
+<h2>4.1 Blacklist the DVB-T Driver</h2>
+<p>Linux ships with a generic DVB-T driver (<code>dvb_usb_rtl28xxu</code>) that claims the RTL-SDR dongle before our software can. Blacklist it permanently:</p>
+<div class="code-block">sudo nano /etc/modprobe.d/blacklist-rtl.conf</div>
+<p style="margin-top:10px">Add these three lines, then save and exit (Ctrl+X, Y, Enter):</p>
+<div class="code-block">blacklist dvb_usb_rtl28xxu
+blacklist rtl2832
+blacklist rtl2830</div>
+<div class="warning">Skipping the blacklist step is the #1 cause of "usb_open error -3" errors. Do this before plugging in the dongle.</div>
+
+<h2>4.2 Install librtlsdr</h2>
+<p>For the V3 dongle, apt is sufficient. For the V4 dongle, build from source (below):</p>
+<div class="code-block">sudo apt install -y rtl-sdr librtlsdr-dev</div>
+
+<h3>Building rtl-sdr-blog from source (RTL-SDR V4 dongle, recommended)</h3>
+<div class="code-block">sudo apt install -y git cmake build-essential libusb-1.0-0-dev</div>
+<div class="code-block">git clone https://github.com/rtlsdrblog/rtl-sdr-blog.git</div>
+<div class="code-block">cd rtl-sdr-blog && mkdir build && cd build</div>
+<div class="code-block">cmake ../ -DINSTALL_UDEV_RULES=ON</div>
+<div class="code-block">make && sudo make install && sudo ldconfig</div>
+<div class="code-block">sudo cp ../rtl-sdr.rules /etc/udev/rules.d/</div>
+<div class="code-block">sudo udevadm control --reload-rules && sudo udevadm trigger</div>
+
+<h2>4.3 Test the Dongle</h2>
+<p>Plug in the RTL-SDR dongle, then run:</p>
+<div class="code-block">rtl_test -t</div>
+<p style="margin-top:10px">Expected output:</p>
+<div class="code-block">Found 1 device(s):
+  0:  Realtek, RTL2838UHIDIR, SN: 00000001
+Using device 0: Generic RTL2832U OEM
+Supported gain values (29): 0.0 3.7 7.7 ...</div>
+<div class="note">If you get "No supported devices found", re-check the blacklist and udev rules, then unplug and replug the dongle after a reboot.</div>
+
+
+<!-- ═══════════════════════════════ 5. DUMP1090 ═══════════════════════════════ -->
+<div class="page-break"></div>
+<h1>5. Installing dump1090 / readsb</h1>
+
+<h2>5.1 Install dump1090-fa</h2>
+<p>dump1090-fa (FlightAware fork) includes a built-in HTTP server that serves decoded aircraft data as JSON on port 8080 — this is what the Python logger polls.</p>
+<div class="code-block">sudo apt install -y dump1090-fa</div>
+<p style="margin-top:10px">If not in the apt repository for your OS version:</p>
+<div class="code-block">wget https://github.com/flightaware/dump1090/releases/latest/download/dump1090-fa_*.deb
+sudo dpkg -i dump1090-fa_*.deb</div>
+
+<h2>5.2 Configure dump1090-fa</h2>
+<div class="code-block">sudo nano /etc/default/dump1090-fa</div>
+<p style="margin-top:10px">Key settings to review and set:</p>
+<table class="two-col-table">
+  <tbody>
+    <tr><td>RECEIVER_TYPE</td><td>rtlsdr</td></tr>
+    <tr><td>RTLSDR_DEVICE</td><td>0  (device index; 0 for a single dongle)</td></tr>
+    <tr><td>NET_OPTIONS</td><td>--net --net-ro-port 30002 --net-sbs-port 30003</td></tr>
+    <tr><td>HTTP_PORT</td><td>8080  (JSON API and map served here)</td></tr>
+    <tr><td>BEAST_OPTIONS</td><td>--lat 37.42 --lon -122.18  (your GPS coordinates)</td></tr>
+    <tr><td>MAX_RANGE</td><td>360  (km; physical limit for ADS-B at altitude)</td></tr>
+  </tbody>
+</table>
+<div class="warning">Set your exact latitude and longitude. dump1090 uses this to calculate range statistics and draw the range ring on the map. Wrong coordinates produce wrong range data.</div>
+
+<h2>5.3 Enable and Start the Service</h2>
+<div class="code-block">sudo systemctl enable dump1090-fa
+sudo systemctl start dump1090-fa
+sudo systemctl status dump1090-fa</div>
+<p style="margin-top:10px">Verify the JSON feed is live (give it 30 seconds after first start):</p>
+<div class="code-block">curl http://localhost:8080/data/aircraft.json | python3 -m json.tool | head -40</div>
+<p style="margin-top:10px">You should see a JSON object with an "aircraft" array. If the list is empty, wait ~1 minute — it depends on local air traffic.</p>
+
+<h2>5.4 Alternative: readsb</h2>
+<p>readsb is a drop-in replacement with better performance on Pi. Install and configure identically:</p>
+<div class="code-block">sudo apt install -y readsb
+sudo systemctl enable readsb && sudo systemctl start readsb</div>
+<p style="margin-top:10px">readsb serves the same JSON endpoint at the same port. The Python logger works with either.</p>
+
+
+<!-- ═══════════════════════════════ 6. ANTENNA ═══════════════════════════════ -->
+<h1>6. Antenna Placement &amp; RF Chain</h1>
+
+<h2>6.1 Why Placement Matters</h2>
+<p>ADS-B is line-of-sight. Aircraft at 35,000 ft are visible up to ~400 km in theory, but terrain, buildings, and foliage block lower-altitude targets. The single most impactful upgrade you can make is moving the antenna higher and outside — not buying a better dongle.</p>
+
+<h2>6.2 Recommended RF Chain</h2>
+<p>From antenna to Pi, in order:</p>
+<ol>
+  <li>Antenna (outside, as high as possible, clear sky view)</li>
+  <li>Low-loss coax run, shortest practical length (every 3 m of RG-58 ≈ 1 dB loss at 1090 MHz)</li>
+  <li>Inline band-pass filter (optional but recommended in urban RF environments)</li>
+  <li>LNA / Pro Stick Plus (placed close to the antenna if possible, not the Pi end)</li>
+  <li>RTL-SDR dongle plugged into Pi USB 2.0 port</li>
+</ol>
+<div class="warning">Coax loss matters. If your run is longer than 5 m, use LMR-400 or LMR-195 instead of RG-58. Alternatively, move the Pi near the antenna and run Ethernet, not coax.</div>
+
+<h2>6.3 DIY 1090 MHz Dipole Antenna</h2>
+<p>If you do not have a commercial antenna, a simple vertical dipole takes 15 minutes to build:</p>
+<ul>
+  <li>Cut two pieces of stiff wire to exactly <strong>69 mm</strong> each</li>
+  <li>Solder one to the centre pin of an SMA connector, one to the shield</li>
+  <li>Orient both elements vertically (collinear), one up and one down</li>
+  <li>Mount in free space away from metal surfaces and cable runs</li>
+</ul>
+<div class="note">This antenna has ~2 dBi gain and gives surprisingly good range for zero cost. The commercial FlightAware antenna has ~5 dBi with a ground plane, extending range by 20–30%.</div>
+
+
+<!-- ═══════════════════════════════ 7. LOGGER ═══════════════════════════════ -->
+<div class="page-break"></div>
+<h1>7. Python Data Logger</h1>
+
+<h2>7.1 Purpose</h2>
+<p>dump1090 holds only the last ~60 seconds of aircraft data in memory. The Python logger polls the JSON API every 5 seconds and appends new records to a CSV file for historical analysis and dashboard ingestion.</p>
+
+<h2>7.2 Install Dependencies</h2>
+<div class="code-block">sudo apt install -y python3-pip python3-venv
+mkdir ~/adsb-logger && cd ~/adsb-logger
+python3 -m venv venv && source venv/bin/activate
+pip install requests pandas</div>
+
+<h2>7.3 Logger Script</h2>
+<p>Create <code>~/adsb-logger/logger.py</code> and paste the following:</p>
+<div class="code-block">import requests, csv, time, os
+from datetime import datetime, timezone
+
+DUMP1090_URL = 'http://localhost:8080/data/aircraft.json'
+CSV_FILE     = os.path.expanduser('~/adsb-logger/aircraft_log.csv')
+POLL_SECS    = 5
+
+FIELDS = ['timestamp','hex','flight','alt_baro','alt_geom',
+          'gs','track','lat','lon','vert_rate','rssi','messages']
+
+def ensure_header(path):
+    if not os.path.exists(path):
+        with open(path, 'w', newline='') as f:
+            csv.writer(f).writerow(FIELDS)
+
+def fetch_and_log():
+    try:
+        data = requests.get(DUMP1090_URL, timeout=3).json()
+    except Exception as e:
+        print(f'[WARN] fetch failed: {e}')
+        return
+    ts = datetime.now(timezone.utc).isoformat()
+    rows = []
+    for ac in data.get('aircraft', []):
+        if 'lat' not in ac:
+            continue  # skip non-position messages
+        rows.append([
+            ts,
+            ac.get('hex',''),
+            ac.get('flight','').strip(),
+            ac.get('alt_baro',''),
+            ac.get('alt_geom',''),
+            ac.get('gs',''),
+            ac.get('track',''),
+            ac.get('lat',''),
+            ac.get('lon',''),
+            ac.get('vert_rate',''),
+            ac.get('rssi',''),
+            ac.get('messages',''),
+        ])
+    with open(CSV_FILE, 'a', newline='') as f:
+        csv.writer(f).writerows(rows)
+    print(f'[{ts[:19]}] logged {len(rows)} aircraft')
+
+if __name__ == '__main__':
+    ensure_header(CSV_FILE)
+    print(f'Logging to {CSV_FILE} every {POLL_SECS}s ...')
+    while True:
+        fetch_and_log()
+        time.sleep(POLL_SECS)</div>
+
+<h2>7.4 Run as a systemd Service</h2>
+<div class="code-block">sudo nano /etc/systemd/system/adsb-logger.service</div>
+<p style="margin-top:10px">Paste the following, then save and exit:</p>
+<div class="code-block">[Unit]
+Description=ADS-B CSV Logger
+After=network.target dump1090-fa.service
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/adsb-logger
+ExecStart=/home/pi/adsb-logger/venv/bin/python logger.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target</div>
+<div class="code-block">sudo systemctl daemon-reload
+sudo systemctl enable adsb-logger
+sudo systemctl start adsb-logger
+sudo journalctl -u adsb-logger -f   # watch live output</div>
+
+
+<!-- ═══════════════════════════════ 8. DASHBOARD ═══════════════════════════════ -->
+<h1>8. Dashboard</h1>
+
+<h2>8.1 Architecture</h2>
+<p>The live dashboard (<a href="https://aryanxoxo.github.io/ads-b-aircraft-receiver-dashboard/">aryanxoxo.github.io/ads-b-aircraft-receiver-dashboard</a>) is a static GitHub Pages site. Two operating modes:</p>
+<ul>
+  <li><strong>Simulation mode</strong> — JavaScript-generated synthetic traffic (current default, safe for demos when hardware is offline)</li>
+  <li><strong>Live mode</strong> — fetches the JSON API from the Raspberry Pi when reachable on the local network</li>
+</ul>
+
+<h2>8.2 Enabling Live Mode</h2>
+<p>Update the following constants in the main JS file in the repo:</p>
+<div class="code-block">const DUMP1090_URL = 'http://adsb-station.local:8080/data/aircraft.json';
+const SIMULATION_MODE = false;</div>
+<div class="warning">Browsers block mixed HTTP/HTTPS requests. Since GitHub Pages serves over HTTPS, you cannot fetch HTTP from the Pi directly in the public site. Solutions: (1) set up an nginx HTTPS proxy on the Pi, (2) serve the dashboard locally from the Pi itself, or (3) keep simulation mode for the public site and use a local HTTP copy for live data.</div>
+
+<h2>8.3 Serving the Dashboard Locally from the Pi</h2>
+<p>Simplest approach for a live local display:</p>
+<div class="code-block">cd ~/adsb-dashboard   # your local clone of the repo
+python3 -m http.server 8000</div>
+<p style="margin-top:10px">Open <code>http://adsb-station.local:8000</code> in any browser on the same network. No CORS issues, full live data.</p>
+
+
+<!-- ═══════════════════════════════ 9. TESTING ═══════════════════════════════ -->
+<div class="page-break"></div>
+<h1>9. Testing &amp; Verification</h1>
+
+<h2>9.1 Quick Health Check</h2>
+<table class="two-col-table">
+  <tbody>
+    <tr><td>RTL-SDR detected</td><td><code>rtl_test -t</code>  →  shows device 0</td></tr>
+    <tr><td>dump1090-fa running</td><td><code>systemctl status dump1090-fa</code>  →  active (running)</td></tr>
+    <tr><td>JSON feed live</td><td><code>curl localhost:8080/data/aircraft.json</code>  →  JSON with 'aircraft' array</td></tr>
+    <tr><td>Aircraft appearing</td><td>Open <code>http://adsb-station.local:8080</code>  →  map with blips</td></tr>
+    <tr><td>Logger running</td><td><code>systemctl status adsb-logger</code>  →  active (running)</td></tr>
+    <tr><td>CSV growing</td><td><code>wc -l ~/adsb-logger/aircraft_log.csv</code>  →  count increases over time</td></tr>
+    <tr><td>Dashboard loading</td><td>Browser at <code>localhost:8000</code>  →  radar scope animates</td></tr>
+  </tbody>
+</table>
+
+<h2>9.2 Checking Signal Quality</h2>
+<p>In the dump1090 web map (port 8080), signal strength should show between <strong>-3 dBFS and -15 dBFS</strong> for nearby aircraft. Weaker than -20 dBFS suggests an antenna placement or coax issue.</p>
+<p>Scan the 1090 MHz band to confirm antenna reception:</p>
+<div class="code-block">rtl_power -f 1089M:1091M:10k -g 30 -i 1 -1 scan_1090.csv</div>
+<p style="margin-top:10px">A peak above -50 dBm at 1090 MHz confirms antenna reception. A flat spectrum means the antenna is disconnected or the RF chain has a break.</p>
+
+<h2>9.3 Common Issues</h2>
+<table class="two-col-table">
+  <tbody>
+    <tr><td>No devices found</td><td>Blacklist not applied  →  re-check /etc/modprobe.d and reboot</td></tr>
+    <tr><td>usb_open error -3</td><td>Permission issue  →  <code>sudo usermod -aG plugdev pi</code>  then re-login</td></tr>
+    <tr><td>0 aircraft in JSON</td><td>Antenna disconnected, wrong coax, or no air traffic overhead — wait 5 min</td></tr>
+    <tr><td>Excessive noise floor</td><td>Missing band-pass filter, or USB 3.0 interference  →  use a USB 2.0 port</td></tr>
+    <tr><td>Logger not writing CSV</td><td>Check <code>journalctl -u adsb-logger</code>  →  usually a path permission issue</td></tr>
+    <tr><td>Dashboard shows demo only</td><td>SIMULATION_MODE still true, or Pi not reachable from browser host</td></tr>
+    <tr><td>Pi overheating</td><td>Thermal throttle stops USB  →  add heatsink or small fan</td></tr>
+  </tbody>
+</table>
+
+
+<!-- ═══════════════════════════════ 10. COMMANDS ═══════════════════════════════ -->
+<h1>10. Useful Commands Reference</h1>
+<table class="two-col-table">
+  <tbody>
+    <tr><td>Watch live traffic</td><td><code>watch -n1 'curl -s localhost:8080/data/aircraft.json | python3 -m json.tool | grep -E "flight|alt|gs"'</code></td></tr>
+    <tr><td>Count unique aircraft today</td><td><code>tail -n +2 ~/adsb-logger/aircraft_log.csv | cut -d, -f3 | sort -u | wc -l</code></td></tr>
+    <tr><td>Total log lines today</td><td><code>grep $(date +%Y-%m-%d) ~/adsb-logger/aircraft_log.csv | wc -l</code></td></tr>
+    <tr><td>Check dongle temp (V4)</td><td><code>rtl_sdr -f 1090M -s 2.4M -g 0 - 2>&amp;1 | grep -i temp | head -5</code></td></tr>
+    <tr><td>Restart all services</td><td><code>sudo systemctl restart dump1090-fa adsb-logger</code></td></tr>
+    <tr><td>View dump1090 live log</td><td><code>sudo journalctl -u dump1090-fa -f</code></td></tr>
+    <tr><td>Backup CSV log</td><td><code>cp ~/adsb-logger/aircraft_log.csv ~/adsb-backup-$(date +%Y%m%d).csv</code></td></tr>
+    <tr><td>Disk usage</td><td><code>du -sh ~/adsb-logger/aircraft_log.csv</code></td></tr>
+  </tbody>
+</table>
+
+
+<!-- ═══════════════════════════════ 11. RESOURCES ═══════════════════════════════ -->
+<h1>11. Resources &amp; Links</h1>
+<ul style="line-height:2">
+  <li><strong>dump1090-fa GitHub:</strong> <a href="https://github.com/flightaware/dump1090">github.com/flightaware/dump1090</a></li>
+  <li><strong>readsb GitHub:</strong> <a href="https://github.com/wiedehopf/readsb">github.com/wiedehopf/readsb</a></li>
+  <li><strong>RTL-SDR Blog V4 setup guide:</strong> <a href="https://www.rtl-sdr.com/rtl-sdr-blog-v4-dongle-initial-release/">rtl-sdr.com/rtl-sdr-blog-v4-dongle-initial-release/</a></li>
+  <li><strong>ADS-B Exchange (coverage map &amp; feed):</strong> <a href="https://www.adsbexchange.com">adsbexchange.com</a></li>
+  <li><strong>Your live dashboard:</strong> <a href="https://aryanxoxo.github.io/ads-b-aircraft-receiver-dashboard/">aryanxoxo.github.io/ads-b-aircraft-receiver-dashboard/</a></li>
+  <li><strong>FlightAware PiAware (alternative full-stack):</strong> <a href="https://flightaware.com/adsb/piaware/">flightaware.com/adsb/piaware/</a></li>
+</ul>
+
+<hr class="doc-rule" style="margin-top:40px">
+<div class="doc-footer">Document prepared by Aryan Chahardovalee &nbsp;·&nbsp; aryanch.com &nbsp;·&nbsp; github.com/aryanxoxo</div>
+
+</body>
+</html>
