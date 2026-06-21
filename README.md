@@ -1,30 +1,74 @@
-# ADS-B Aircraft Receiver Dashboard
+# ADS-B Aircraft Receiver Lab
 
-Public-safe dashboard and documentation for an SDR-based ADS-B aircraft receiver workflow.
+Lab console and hookup notes for a software-defined ADS-B receiver built around an RTL-SDR dongle, GNU Radio / dump1090-style decoding, and a Python logger.
 
-## Project period
+The browser dashboard is not a standalone aircraft data generator. It shows live values only after it is connected to decoded ADS-B output from real receiver software.
 
-Representative of work from my RF / aviation portfolio, aligned with private pilot training and SDR receiver projects. This repository was created later as a public-safe evidence artifact because the original local files and RF captures are not suitable for public release.
+## Hardware Path
 
-## What this demonstrates
-
-- 1090 MHz ADS-B / Mode S receiver signal chain
-- RTL-SDR-style RF front end and aircraft telemetry workflow
-- Preamble detection, frame decoding, ICAO/callsign/altitude/range logging
-- Dashboard-style visualization for aircraft tracks and signal quality
-- Hardware awareness for antennas, filters, LNAs, coax, and Linux logging setup
-
-## Hardware to run the real project
-
-- RTL-SDR Blog V4, Airspy, or comparable SDR receiver
 - 1090 MHz ADS-B antenna
 - Optional 1090 MHz band-pass filter and LNA
-- SMA adapters, USB extension, and low-loss coax
-- Laptop or Raspberry Pi running Linux
-- `dump1090`, `readsb`, or similar ADS-B decoder
-- Python for logging, plotting, and dashboard integration
+- RTL-SDR USB dongle or compatible SDR
+- Laptop or Raspberry Pi running the decoder stack
+- GNU Radio, `dump1090`, `readsb`, or `gr-air-modes`
 
-## Resume-safe description
+## How The Dashboard Gets Values
 
-Built an SDR-based aircraft receiver workflow for real-time ADS-B decoding and visualization. Implemented RF signal processing, Mode S telemetry parsing, aircraft logging, and a public-safe dashboard showing signal quality, decoded traffic, and hardware stack.
+1. Aircraft transmit Mode S / ADS-B messages on 1090 MHz.
+2. The antenna and RTL-SDR receive and digitize the RF signal.
+3. GNU Radio or a decoder such as `dump1090` / `readsb` demodulates the Mode S frames.
+4. `adsb_live_server.py` reads either `aircraft.json` or SBS/BaseStation TCP output.
+5. The dashboard polls `/api/aircraft`, `/api/messages`, and `/api/status`.
+6. Decoded frames are archived to CSV under `adsb_logs/`.
 
+Until step 4 is connected, the dashboard intentionally shows zero contacts and a waiting/no-feed state.
+
+## Run With dump1090/readsb JSON
+
+```bash
+python adsb_live_server.py --port 8770 --aircraft-json /run/readsb/aircraft.json
+```
+
+Common alternate paths:
+
+```bash
+python adsb_live_server.py --port 8770 --aircraft-json /var/run/dump1090-fa/aircraft.json
+python adsb_live_server.py --port 8770 --aircraft-json /usr/share/dump1090-fa/html/data/aircraft.json
+```
+
+Open:
+
+```text
+http://127.0.0.1:8770/
+```
+
+## Run With SBS/BaseStation TCP
+
+If your decoder exposes SBS messages on port 30003:
+
+```bash
+python adsb_live_server.py --port 8770 --sbs-host 127.0.0.1 --sbs-port 30003
+```
+
+## What The Lab Console Shows
+
+![ADS-B receiver lab console with sample decoded aircraft](docs/lab-console-sample.png)
+
+- Receiver/feed status
+- Aircraft position markers
+- ICAO address, callsign, altitude, range, and signal
+- Mode S message log
+- CSV/JSON export from the current browser session
+- SDR chain and hardware connection notes
+
+## Verification Checklist
+
+- `rtl_test -t` detects the SDR dongle
+- Decoder service is running
+- `aircraft.json` contains an `aircraft` array, or SBS TCP is reachable
+- The Python server reports `connected: true` at `/api/status`
+- The dashboard changes from waiting/no-feed to live feed
+
+## Screenshot
+
+See `docs/lab-console-sample.png` for a sample run using a local receiver JSON feed.

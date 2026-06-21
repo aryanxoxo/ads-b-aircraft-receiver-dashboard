@@ -1,79 +1,1011 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ADS-B Aircraft Receiver Dashboard</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ADS-B Receiver Lab Console</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ7dWC8AsRhCz1U3ZboM1A+zgk93x8=" crossorigin="">
   <style>
-    :root { --ink:#111827; --muted:#626b7a; --line:#d9e1ea; --soft:#f5f8fb; --teal:#087f8c; --orange:#d9480f; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:Inter,"Segoe UI",Arial,sans-serif; color:var(--ink); background:linear-gradient(180deg,#f8fafc,#eef3f8 55%,#fff); line-height:1.55; }
-    main { width:min(1120px,calc(100% - 28px)); margin:0 auto; padding:30px 0 46px; }
-    .hero,.panel { border:1px solid rgba(17,24,39,.12); border-radius:8px; background:#fff; box-shadow:0 12px 34px rgba(17,24,39,.07); }
-    .hero { padding:28px; background:radial-gradient(circle at 14% 18%,rgba(8,127,140,.13),transparent 30%),linear-gradient(135deg,#fff,#eef6f8); }
-    .badges { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-    .badge { border:1px solid rgba(8,127,140,.22); border-radius:999px; padding:5px 10px; font-size:.78rem; font-weight:750; }
-    h1 { margin:0; font-size:clamp(2rem,4.6vw,3.7rem); line-height:1; }
-    .lead { max-width:820px; color:var(--muted); margin:14px 0 0; }
-    .grid { display:grid; grid-template-columns:1.2fr .8fr; gap:14px; margin-top:14px; align-items:start; }
-    .panel { padding:16px; }
-    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
-    .metric { border:1px solid var(--line); border-radius:8px; padding:12px; background:var(--soft); }
-    .metric small { color:var(--muted); text-transform:uppercase; font-weight:800; font-size:.68rem; }
-    .metric strong { display:block; margin-top:4px; font-size:1.3rem; }
-    canvas { width:100%; height:245px; background:#fbfcfe; border-radius:6px; border:1px solid var(--line); }
-    table { width:100%; border-collapse:collapse; font-size:.86rem; }
-    th,td { text-align:left; padding:8px; border-bottom:1px solid var(--line); }
-    th { background:var(--soft); }
-    ul { margin:0; padding-left:1.1rem; color:var(--muted); }
-    @media(max-width:850px){.grid,.metrics{grid-template-columns:1fr}.hero{text-align:center}.badges{justify-content:center}}
+    :root {
+      color-scheme: dark;
+      --bg: #101115;
+      --panel: #191b20;
+      --panel-2: #202329;
+      --line: #30343d;
+      --text: #edf0f4;
+      --muted: #9aa4b2;
+      --green: #4ee58c;
+      --cyan: #54d7ff;
+      --amber: #ffd166;
+      --red: #ff6b6b;
+      --blue: #70a7ff;
+      --purple: #b392ff;
+      --shadow: 0 18px 40px rgba(0, 0, 0, .32);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(16, 17, 21, .96);
+      position: sticky;
+      top: 0;
+      z-index: 900;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .dish {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 58% 38%, rgba(84, 215, 255, .95) 0 7%, transparent 8%),
+        conic-gradient(from 220deg, transparent 0 16%, rgba(78, 229, 140, .9) 18% 21%, transparent 23% 37%, rgba(84, 215, 255, .85) 39% 43%, transparent 46% 100%),
+        linear-gradient(135deg, #222832, #12151a);
+      border: 1px solid #3a414d;
+      box-shadow: inset 0 0 18px rgba(84, 215, 255, .14);
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.1;
+      font-weight: 760;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .subline {
+      margin-top: 4px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .link-btn,
+    .icon-btn {
+      color: var(--text);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 38px;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+      cursor: pointer;
+    }
+
+    .link-btn {
+      padding: 0 12px;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .icon-btn {
+      width: 38px;
+      padding: 0;
+    }
+
+    .link-btn:hover,
+    .icon-btn:hover {
+      transform: translateY(-1px);
+      border-color: #586170;
+      background: #272b33;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 14px;
+      padding: 14px;
+      min-height: 0;
+      align-items: start;
+    }
+
+    .map-wrap {
+      display: grid;
+      grid-template-rows: auto minmax(520px, 640px);
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(118px, 1fr));
+      gap: 10px;
+    }
+
+    .stat,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat {
+      padding: 12px;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat::after {
+      content: "";
+      position: absolute;
+      inset: auto 10px 8px 10px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+      opacity: .85;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 24px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      background: #0e1518;
+      box-shadow: var(--shadow);
+    }
+
+    .leaflet-control-attribution {
+      background: rgba(16, 17, 21, .74) !important;
+      color: #c6d0dd !important;
+    }
+
+    .leaflet-control-attribution a {
+      color: #e3f7ff !important;
+    }
+
+    .plane-marker {
+      width: 30px;
+      height: 30px;
+      color: var(--green);
+      filter: drop-shadow(0 0 8px rgba(78, 229, 140, .45));
+    }
+
+    .plane-marker svg {
+      display: block;
+      width: 30px;
+      height: 30px;
+      transform: rotate(var(--heading));
+      transform-origin: 50% 50%;
+    }
+
+    .plane-marker.weak { color: var(--amber); }
+    .plane-marker.alert { color: var(--red); }
+
+    .map-label {
+      background: rgba(16, 17, 21, .82);
+      border: 1px solid rgba(255, 255, 255, .18);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 7px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, .3);
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .side {
+      display: grid;
+      grid-template-rows: auto auto minmax(260px, 1fr);
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .panel {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      min-height: 48px;
+      padding: 12px 12px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      font-weight: 760;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 99px;
+      background: var(--green);
+      box-shadow: 0 0 12px currentColor;
+      color: var(--green);
+      flex: 0 0 auto;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .panel-body {
+      padding: 12px;
+    }
+
+    .signal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .mini {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #15171c;
+    }
+
+    .mini span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .mini strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .flow-node {
+      min-height: 42px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #14171b;
+      color: #d9e1ec;
+      font-size: 12px;
+      font-weight: 690;
+      padding: 6px;
+    }
+
+    .hardware-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .hardware-item {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #14171b;
+      color: #d9e1ec;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .hardware-item svg {
+      width: 18px;
+      height: 18px;
+      color: var(--cyan);
+      margin-top: 1px;
+    }
+
+    .hardware-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 96px;
+      display: block;
+      background: #0b0d10;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .contacts {
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      padding: 8px 7px;
+      text-align: left;
+      border-bottom: 1px solid rgba(48, 52, 61, .72);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      background: #17191f;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr.active-row td {
+      color: #ffffff;
+      background: rgba(84, 215, 255, .08);
+    }
+
+    .log {
+      height: 100%;
+      min-height: 240px;
+      overflow: auto;
+      padding: 12px;
+      font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #dbe5f1;
+      background: #0d0f12;
+    }
+
+    .log-line {
+      display: grid;
+      grid-template-columns: 62px 42px 72px minmax(0, 1fr);
+      gap: 8px;
+      border-bottom: 1px solid rgba(48, 52, 61, .45);
+      padding: 4px 0;
+    }
+
+    .log-line span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mono-green { color: var(--green); }
+    .mono-cyan { color: var(--cyan); }
+    .mono-amber { color: var(--amber); }
+
+    .range-control {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+    }
+
+    @media (max-width: 1100px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: auto auto;
+      }
+
+      .logger-panel {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .links {
+        justify-content: flex-start;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .map-wrap {
+        grid-template-rows: auto 460px;
+      }
+
+      #map {
+        min-height: 460px;
+      }
+
+      .side {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .workspace {
+        padding: 10px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        white-space: normal;
+      }
+
+      .flow {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
   </style>
 </head>
 <body>
-<main>
-  <section class="hero">
-    <div class="badges"><span class="badge">1090 MHz</span><span class="badge">RTL-SDR</span><span class="badge">Mode S</span><span class="badge">Public-safe dashboard</span></div>
-    <h1>ADS-B Aircraft Receiver Dashboard</h1>
-    <p class="lead">Representative dashboard for an SDR aircraft receiver: signal quality, decoded traffic, range rings, and hardware stack. No private captures are included.</p>
-  </section>
-  <section class="grid">
-    <div class="panel">
-      <div class="metrics">
-        <div class="metric"><small>Messages</small><strong>18.4k</strong></div>
-        <div class="metric"><small>Aircraft</small><strong>5</strong></div>
-        <div class="metric"><small>Range</small><strong>142 km</strong></div>
-        <div class="metric"><small>Peak SNR</small><strong>28 dB</strong></div>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="dish" aria-hidden="true"></div>
+        <div>
+          <h1>ADS-B Receiver Lab Console</h1>
+          <div class="subline">
+            <span>RTL-SDR · 1090 MHz</span>
+            <span>GNU Radio PPM demod</span>
+            <span>Mode S frame sync</span>
+          </div>
+        </div>
       </div>
-      <canvas id="plot"></canvas>
-    </div>
-    <aside class="panel">
-      <h2>Hardware checklist</h2>
-      <ul>
-        <li>RTL-SDR or Airspy receiver</li>
-        <li>1090 MHz ADS-B antenna</li>
-        <li>Optional LNA and band-pass filter</li>
-        <li>Low-loss coax and SMA adapters</li>
-        <li>Linux laptop or Raspberry Pi</li>
-        <li>dump1090/readsb plus Python logger</li>
-      </ul>
-    </aside>
-  </section>
-  <section class="panel" style="margin-top:14px">
-    <h2>Representative decoded traffic</h2>
-    <table>
-      <thead><tr><th>ICAO</th><th>Callsign</th><th>Altitude</th><th>Speed</th><th>Range</th><th>Signal</th></tr></thead>
-      <tbody>
-        <tr><td>A7C4B2</td><td>UAL1427</td><td>34,000 ft</td><td>458 kt</td><td>62 km</td><td>-7.2 dB</td></tr>
-        <tr><td>C01F55</td><td>ACA211</td><td>28,750 ft</td><td>412 kt</td><td>88 km</td><td>-9.5 dB</td></tr>
-        <tr><td>A3E91C</td><td>SWA808</td><td>12,200 ft</td><td>286 kt</td><td>31 km</td><td>-4.8 dB</td></tr>
-      </tbody>
-    </table>
-  </section>
-</main>
-<script>
-const c=document.getElementById("plot"),ctx=c.getContext("2d");
-function draw(){const d=window.devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;ctx.scale(d,d);const w=r.width,h=r.height;ctx.fillStyle="#fbfcfe";ctx.fillRect(0,0,w,h);ctx.strokeStyle="#e1e7ef";for(let i=1;i<5;i++){ctx.beginPath();ctx.moveTo(36,h*i/5);ctx.lineTo(w-12,h*i/5);ctx.stroke()}ctx.strokeStyle="#087f8c";ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<180;i++){const x=36+(w-48)*i/179,y=h-34-(Math.sin(i*.22)*12+Math.random()*10+32+(i%41===0?70:0));if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();ctx.fillStyle="#626b7a";ctx.font="12px Segoe UI";ctx.fillText("1090 MHz signal bursts / message activity",10,18)}
-draw();addEventListener("resize",draw);
-</script>
+      <nav class="links" aria-label="Project references">
+        <a class="link-btn" href="ADS-B_Setup_Guide.html" target="_blank" rel="noreferrer">Setup Guide</a>
+        <a class="link-btn" href="https://github.com/aryanxoxo/ads-b-aircraft-receiver-lab" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="workspace">
+      <section class="map-wrap" aria-label="Live aircraft map">
+        <div class="stats">
+          <div class="stat"><span>Contacts</span><strong id="contactsCount">74</strong></div>
+          <div class="stat"><span>Frames / sec</span><strong id="fps">1,184</strong></div>
+          <div class="stat"><span>Range</span><strong id="maxRange">206 km</strong></div>
+          <div class="stat"><span>Preamble lock</span><strong id="lock">98.7%</strong></div>
+          <div class="stat"><span>Drift correction</span><strong id="drift">+2.4 ppm</strong></div>
+        </div>
+        <div id="map" role="img" aria-label="Map of decoded aircraft positions around the receiver"></div>
+      </section>
+
+      <aside class="side">
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span class="dot"></span> SDR Chain</div>
+            <span class="chip">AGC locked</span>
+          </div>
+          <div class="panel-body">
+            <canvas id="spectrum" width="680" height="190" aria-label="1090 MHz spectrum"></canvas>
+            <div class="signal-grid">
+              <div class="mini"><span>Center</span><strong>1090.000 MHz</strong></div>
+              <div class="mini"><span>Sample rate</span><strong>2.4 MS/s</strong></div>
+              <div class="mini"><span>Gain</span><strong id="gain">41.9 dB</strong></div>
+              <div class="mini"><span>Noise floor</span><strong id="noise">-48 dBFS</strong></div>
+            </div>
+            <div class="flow" aria-label="GNU Radio flowgraph">
+              <div class="flow-node">RTL-SDR</div>
+              <div class="flow-node">Bandpass</div>
+              <div class="flow-node">AGC</div>
+              <div class="flow-node">PPM Demod</div>
+              <div class="flow-node">Frame Sync</div>
+              <div class="flow-node">Python Logger</div>
+            </div>
+            <div class="hardware-list" aria-label="Connected hardware">
+              <div class="hardware-item">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 20V9m0 0L6 3m6 6 6-6M5 21h14M8 16h8"/></svg>
+                <div><strong>1090 MHz ADS-B antenna</strong> Rooftop quarter-wave / collinear antenna feeding aircraft transponder bursts into the receiver.</div>
+              </div>
+              <div class="hardware-item">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 7h12v10H6zM9 7V4h6v3M9 17v3h6v-3M3 10h3m12 0h3M3 14h3m12 0h3"/></svg>
+                <div><strong>RTL-SDR USB dongle</strong> Tuned to 1090 MHz, digitizing RF with gain control before GNU Radio demodulates Mode S PPM pulses.</div>
+              </div>
+              <div class="hardware-item">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 5h16v11H4zM8 21h8m-4-5v5"/></svg>
+                <div><strong>Laptop running GNU Radio</strong> USB host runs the flowgraph, drift-compensated AGC, frame sync, Python decoder, logger, and live map feed.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span class="dot"></span> Aircraft</div>
+            <span class="chip" id="visibleCount">12 visible</span>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar">
+              <button class="icon-btn" id="pauseBtn" title="Pause feed" aria-label="Pause feed">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>
+              </button>
+              <button class="icon-btn" id="centerBtn" title="Center map" aria-label="Center map">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 2v4m0 12v4M2 12h4m12 0h4M7 12a5 5 0 1 0 10 0a5 5 0 0 0-10 0Z"/></svg>
+              </button>
+              <button class="icon-btn" id="exportJson" title="Download JSON log" aria-label="Download JSON log">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 3v12m0 0l-5-5m5 5l5-5M5 19h14"/></svg>
+              </button>
+              <button class="icon-btn" id="exportCsv" title="Download CSV log" aria-label="Download CSV log">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 4h16v16H4zM4 9h16M9 4v16"/></svg>
+              </button>
+            </div>
+            <div class="range-control">
+              <input id="rangeFilter" type="range" min="60" max="220" value="220" step="10" aria-label="Range filter">
+              <span id="rangeLabel">220 km</span>
+            </div>
+          </div>
+          <div class="contacts">
+            <table>
+              <thead>
+                <tr><th>Callsign</th><th>Alt</th><th>Range</th><th>RSSI</th></tr>
+              </thead>
+              <tbody id="aircraftRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel logger-panel">
+          <div class="panel-head">
+            <div class="panel-title"><span class="dot"></span> Mode S Logger</div>
+            <span class="chip" id="logSize">0 frames</span>
+          </div>
+          <div class="log" id="log"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    let receiver = { lat: 49.2827, lon: -123.1207 };
+    let aircraft = [];
+    let paused = false;
+    let frameLog = [];
+    let selectedIcao = "";
+    let rangeLimit = 220;
+    let receiverMarker;
+    const rangeRings = [];
+    const markers = new Map();
+
+    const map = L.map("map", { zoomControl: false }).setView([receiver.lat, receiver.lon], 8);
+    window.map = map;
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 12,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+
+    function drawReceiver() {
+      if (receiverMarker) receiverMarker.remove();
+      receiverMarker = L.circle([receiver.lat, receiver.lon], {
+        radius: 1200,
+        color: "#54d7ff",
+        weight: 2,
+        fillColor: "#54d7ff",
+        fillOpacity: .24
+      }).addTo(map).bindTooltip("Rooftop RTL-SDR");
+      rangeRings.forEach((ring) => ring.remove());
+      rangeRings.length = 0;
+      [50000, 100000, 150000, 200000].forEach((radius) => {
+        rangeRings.push(L.circle([receiver.lat, receiver.lon], {
+          radius,
+          color: "#54d7ff",
+          weight: 1,
+          opacity: .42,
+          fillOpacity: 0
+        }).addTo(map));
+      });
+    }
+    drawReceiver();
+
+    function updateReceiver(nextReceiver) {
+      if (!nextReceiver || typeof nextReceiver.lat !== "number" || typeof nextReceiver.lon !== "number") return;
+      if (receiver.lat === nextReceiver.lat && receiver.lon === nextReceiver.lon) return;
+      receiver = nextReceiver;
+      drawReceiver();
+      map.setView([receiver.lat, receiver.lon], map.getZoom());
+    }
+
+    function resizeMap() {
+      map.invalidateSize(true);
+      map.setView([receiver.lat, receiver.lon], map.getZoom(), { animate: false });
+    }
+
+    function statusText(status) {
+      const chip = document.querySelector(".panel-head .chip");
+      if (!chip || !status) return;
+      chip.textContent = status.connected ? "live feed" : "waiting";
+    }
+
+    function markerHtml(ac) {
+      const rssi = Number(ac.rssi ?? -28);
+      const level = rssi < -30 ? "alert" : rssi < -25 ? "weak" : "";
+      const heading = Number(ac.heading ?? 0);
+      return `<div class="plane-marker ${level}" style="--heading:${heading}deg">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path fill="currentColor" d="M16 2 21 28 16 25 11 28z"/>
+          <path fill="currentColor" d="M5 18 16 14 27 18 25 21 16 19 7 21z"/>
+        </svg>
+      </div>`;
+    }
+
+    function syncMarkers() {
+      const liveIds = new Set();
+      aircraft.forEach((ac) => {
+        if (typeof ac.lat !== "number" || typeof ac.lon !== "number") return;
+        liveIds.add(ac.icao);
+        const range = ac.range ?? distanceKm(receiver.lat, receiver.lon, ac.lat, ac.lon);
+        const visible = range <= rangeLimit;
+        if (!markers.has(ac.icao)) {
+          const marker = L.marker([ac.lat, ac.lon], {
+            icon: L.divIcon({
+              html: markerHtml(ac),
+              className: "",
+              iconSize: [30, 30],
+              iconAnchor: [15, 15]
+            })
+          }).addTo(map);
+          marker.on("click", () => {
+            selectedIcao = ac.icao;
+            renderRows();
+          });
+          marker.bindTooltip(L.tooltip({
+            permanent: true,
+            direction: "top",
+            offset: [0, -12],
+            className: "map-label"
+          }));
+          markers.set(ac.icao, marker);
+        }
+        const marker = markers.get(ac.icao);
+        marker.setLatLng([ac.lat, ac.lon]);
+        marker.setIcon(L.divIcon({
+          html: markerHtml(ac),
+          className: "",
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        }));
+        marker.getTooltip().setContent(`${ac.callsign || ac.icao} · ${formatAltitude(ac.altitude)}`);
+        if (visible && !map.hasLayer(marker)) marker.addTo(map);
+        if (!visible && map.hasLayer(marker)) map.removeLayer(marker);
+      });
+
+      markers.forEach((marker, icao) => {
+        if (!liveIds.has(icao)) {
+          marker.remove();
+          markers.delete(icao);
+        }
+      });
+    }
+
+    function distanceKm(lat1, lon1, lat2, lon2) {
+      const r = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+      return r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function formatAltitude(value) {
+      return typeof value === "number" ? `${Math.round(value / 100) * 100} ft` : "--";
+    }
+
+    function formatRssi(value) {
+      return typeof value === "number" ? `${value.toFixed(0)} dB` : "--";
+    }
+
+    function shortSourceLabel(source) {
+      if (!source) return "waiting";
+      if (source.includes("aircraft.json")) return "dump1090 JSON";
+      if (source.includes("SBS")) return "SBS TCP";
+      return source;
+    }
+
+    function renderRows() {
+      const tbody = document.getElementById("aircraftRows");
+      const rows = aircraft
+        .filter((ac) => typeof ac.lat === "number" && typeof ac.lon === "number")
+        .map((ac) => ({ ...ac, range: ac.range ?? distanceKm(receiver.lat, receiver.lon, ac.lat, ac.lon) }))
+        .filter((ac) => ac.range <= rangeLimit)
+        .sort((a, b) => a.range - b.range);
+
+      if (!selectedIcao && rows[0]) selectedIcao = rows[0].icao;
+      tbody.innerHTML = rows.length ? rows.map((ac) => `
+        <tr class="${ac.icao === selectedIcao ? "active-row" : ""}" data-icao="${ac.icao}">
+          <td title="${ac.callsign || ac.icao} ${ac.type || ""}">${ac.callsign || ac.icao}</td>
+          <td>${formatAltitude(ac.altitude).replace(" ft", "")}</td>
+          <td>${ac.range.toFixed(0)} km</td>
+          <td>${formatRssi(ac.rssi)}</td>
+        </tr>`).join("") : `<tr><td colspan="4">Waiting for aircraft positions from receiver</td></tr>`;
+      tbody.querySelectorAll("tr[data-icao]").forEach((row) => {
+        row.addEventListener("click", () => {
+          selectedIcao = row.dataset.icao;
+          const ac = aircraft.find((item) => item.icao === selectedIcao);
+          if (ac && typeof ac.lat === "number" && typeof ac.lon === "number") map.panTo([ac.lat, ac.lon]);
+          renderRows();
+        });
+      });
+      document.getElementById("visibleCount").textContent = `${rows.length} visible`;
+    }
+
+    function renderLog() {
+      const log = document.getElementById("log");
+      if (!frameLog.length) {
+        log.innerHTML = `<div class="log-line"><span class="mono-cyan">status</span><span></span><span></span><span>Waiting for decoded Mode S frames from the local ADS-B backend.</span></div>`;
+        document.getElementById("logSize").textContent = "0 frames";
+        return;
+      }
+      log.innerHTML = frameLog.slice(0, 80).map((frame) => `
+        <div class="log-line">
+          <span class="mono-cyan">${new Date(frame.time).toLocaleTimeString()}</span>
+          <span class="mono-amber">${frame.df || "MSG"}</span>
+          <span class="mono-green">${frame.icao || ""}</span>
+          <span>${frame.callsign || ""} alt=${frame.altitude ?? "--"} lat=${frame.lat ?? "--"} lon=${frame.lon ?? "--"} rssi=${frame.rssi_db ?? "--"} ${frame.raw || ""}</span>
+        </div>`).join("");
+      document.getElementById("logSize").textContent = `${frameLog.length} frames`;
+    }
+
+    async function fetchJson(path) {
+      const response = await fetch(path, { cache: "no-store" });
+      if (!response.ok) throw new Error(`${path} returned ${response.status}`);
+      return response.json();
+    }
+
+    async function pollReceiver() {
+      if (paused) return;
+      try {
+        const [aircraftData, messageData] = await Promise.all([
+          fetchJson("/api/aircraft"),
+          fetchJson("/api/messages")
+        ]);
+        updateReceiver(aircraftData.receiver);
+        aircraft = aircraftData.aircraft || [];
+        frameLog = messageData.messages || [];
+        resizeMap();
+        syncMarkers();
+        renderRows();
+        renderLog();
+        const status = aircraftData.status || {};
+        statusText(status);
+        document.getElementById("contactsCount").textContent = aircraftData.stats?.contacts ?? aircraft.length;
+        document.getElementById("fps").textContent = status.connected ? "live" : "idle";
+        document.getElementById("maxRange").textContent = `${aircraftData.stats?.max_range_km ?? 0} km`;
+        document.getElementById("lock").textContent = status.connected ? "feed ok" : "no feed";
+        document.getElementById("drift").textContent = shortSourceLabel(status.source);
+        document.getElementById("gain").textContent = status.connected ? "input" : "--";
+        document.getElementById("noise").textContent = status.last_update_age_s == null ? "--" : `${status.last_update_age_s}s age`;
+      } catch (error) {
+        aircraft = [];
+        frameLog = [];
+        syncMarkers();
+        renderRows();
+        renderLog();
+        document.getElementById("contactsCount").textContent = "0";
+        document.getElementById("fps").textContent = "offline";
+        document.getElementById("maxRange").textContent = "0 km";
+        document.getElementById("lock").textContent = "no API";
+        document.getElementById("drift").textContent = "start backend";
+        document.getElementById("gain").textContent = "--";
+        document.getElementById("noise").textContent = "--";
+      }
+    }
+
+    function drawSpectrum() {
+      const canvas = document.getElementById("spectrum");
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#0b0d10";
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = "rgba(255,255,255,.08)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= w; x += w / 8) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += h / 4) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      const active = aircraft.length > 0;
+      const gradient = ctx.createLinearGradient(0, 0, w, 0);
+      gradient.addColorStop(0, active ? "#70a7ff" : "#4a5260");
+      gradient.addColorStop(.5, active ? "#54d7ff" : "#6b7280");
+      gradient.addColorStop(1, active ? "#4ee58c" : "#3c424d");
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let x = 0; x < w; x++) {
+        const burst = active ? Math.exp(-((x - w / 2) ** 2) / 760) : 0;
+        const side = active ? Math.exp(-((x - w * .62) ** 2) / 90) * .45 : 0;
+        const noise = Math.sin(x * .12 + Date.now() / 180) * 4 + Math.random() * 9;
+        const y = h - 24 - burst * 92 - side * 52 - noise;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = "#9aa4b2";
+      ctx.font = "22px Cascadia Mono, monospace";
+      ctx.fillText("1090 MHz", 24, 34);
+      ctx.font = "18px Cascadia Mono, monospace";
+      ctx.fillText(active ? "live input" : "waiting", w - 128, h - 22);
+    }
+
+    function download(filename, mime, text) {
+      const blob = new Blob([text], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function toCsv(rows) {
+      const header = ["time","df","icao","callsign","altitude","lat","lon","range_km","speed","heading","rssi_db","raw","source"];
+      return [header.join(","), ...rows.map((row) => header.map((key) => JSON.stringify(row[key] ?? "")).join(","))].join("\n");
+    }
+
+    document.getElementById("pauseBtn").addEventListener("click", () => {
+      paused = !paused;
+      document.getElementById("pauseBtn").innerHTML = paused
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>';
+      document.getElementById("pauseBtn").setAttribute("aria-label", paused ? "Resume feed" : "Pause feed");
+      document.getElementById("pauseBtn").setAttribute("title", paused ? "Resume feed" : "Pause feed");
+    });
+
+    document.getElementById("centerBtn").addEventListener("click", () => map.setView([receiver.lat, receiver.lon], 8));
+    document.getElementById("exportJson").addEventListener("click", () => download("adsb-mode-s-log.json", "application/json", JSON.stringify(frameLog, null, 2)));
+    document.getElementById("exportCsv").addEventListener("click", () => download("adsb-mode-s-log.csv", "text/csv", toCsv(frameLog)));
+    document.getElementById("rangeFilter").addEventListener("input", (event) => {
+      rangeLimit = Number(event.target.value);
+      document.getElementById("rangeLabel").textContent = `${rangeLimit} km`;
+      syncMarkers();
+      renderRows();
+    });
+
+    renderRows();
+    renderLog();
+    pollReceiver();
+    drawSpectrum();
+    window.addEventListener("resize", resizeMap);
+    setTimeout(resizeMap, 250);
+    setTimeout(resizeMap, 1200);
+    setTimeout(resizeMap, 3000);
+    setInterval(pollReceiver, 1000);
+    setInterval(drawSpectrum, 1000);
+  </script>
 </body>
 </html>
