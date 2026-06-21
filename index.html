@@ -156,6 +156,55 @@
       min-width: 0;
     }
 
+    .map-shell {
+      position: relative;
+      min-height: 520px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(84, 215, 255, .12), transparent 42%),
+        linear-gradient(rgba(84, 215, 255, .06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(84, 215, 255, .06) 1px, transparent 1px),
+        #0b1116;
+      background-size: auto, 42px 42px, 42px 42px, auto;
+      box-shadow: var(--shadow);
+    }
+
+    .map-shell::before,
+    .map-shell::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 350;
+      opacity: 0;
+      transition: opacity .2s ease;
+    }
+
+    .map-shell::before {
+      background:
+        radial-gradient(circle at 50% 50%, transparent 0 12%, rgba(84, 215, 255, .12) 12.2% 12.6%, transparent 12.8% 24%, rgba(84, 215, 255, .1) 24.2% 24.6%, transparent 24.8% 36%, rgba(84, 215, 255, .08) 36.2% 36.6%, transparent 36.8% 48%, rgba(84, 215, 255, .06) 48.2% 48.6%, transparent 48.8%),
+        linear-gradient(rgba(84, 215, 255, .05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(84, 215, 255, .05) 1px, transparent 1px);
+      background-size: auto, 48px 48px, 48px 48px;
+    }
+
+    .map-shell::after {
+      background: conic-gradient(from 230deg at 50% 50%, rgba(78, 229, 140, .18), transparent 16%, transparent 100%);
+      mix-blend-mode: screen;
+    }
+
+    .map-shell.sample::before,
+    .map-shell.sample::after {
+      opacity: 1;
+    }
+
+    .map-shell.sample .leaflet-tile-pane {
+      opacity: .12;
+      filter: saturate(.8) contrast(.9);
+    }
+
     .stats {
       display: grid;
       grid-template-columns: repeat(5, minmax(118px, 1fr));
@@ -210,10 +259,92 @@
       height: 100%;
       min-height: 520px;
       border-radius: 8px;
-      border: 1px solid var(--line);
-      overflow: hidden;
       background: #0e1518;
-      box-shadow: var(--shadow);
+    }
+
+    .map-state {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      z-index: 500;
+      max-width: min(430px, calc(100% - 28px));
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      background: rgba(16, 17, 21, .84);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .34);
+    }
+
+    .map-state strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .map-state span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .map-state.live {
+      display: none;
+    }
+
+    .sample-airspace {
+      position: absolute;
+      inset: 0;
+      z-index: 620;
+      pointer-events: none;
+      display: none;
+    }
+
+    .map-shell.sample .sample-airspace {
+      display: block;
+    }
+
+    .sample-plane {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: grid;
+      grid-template-columns: auto auto;
+      gap: 7px;
+      align-items: center;
+      color: var(--green);
+      filter: drop-shadow(0 0 12px rgba(78, 229, 140, .85));
+    }
+
+    .sample-plane svg {
+      width: 26px;
+      height: 26px;
+      transform: rotate(var(--heading));
+    }
+
+    .sample-plane span {
+      padding: 4px 7px;
+      border: 1px solid rgba(84, 215, 255, .3);
+      border-radius: 6px;
+      background: rgba(16, 17, 21, .9);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .leaflet-container {
+      background:
+        radial-gradient(circle at 50% 50%, rgba(84, 215, 255, .1), transparent 38%),
+        #0b1116 !important;
+    }
+
+    .leaflet-marker-pane {
+      z-index: 720 !important;
+    }
+
+    .leaflet-tooltip-pane {
+      z-index: 730 !important;
     }
 
     .leaflet-control-attribution {
@@ -226,16 +357,16 @@
     }
 
     .plane-marker {
-      width: 30px;
-      height: 30px;
+      width: 34px;
+      height: 34px;
       color: var(--green);
-      filter: drop-shadow(0 0 8px rgba(78, 229, 140, .45));
+      filter: drop-shadow(0 0 12px rgba(78, 229, 140, .8));
     }
 
     .plane-marker svg {
       display: block;
-      width: 30px;
-      height: 30px;
+      width: 34px;
+      height: 34px;
       transform: rotate(var(--heading));
       transform-origin: 50% 50%;
     }
@@ -244,8 +375,8 @@
     .plane-marker.alert { color: var(--red); }
 
     .map-label {
-      background: rgba(16, 17, 21, .82);
-      border: 1px solid rgba(255, 255, 255, .18);
+      background: rgba(16, 17, 21, .9);
+      border: 1px solid rgba(84, 215, 255, .34);
       color: var(--text);
       border-radius: 6px;
       padding: 5px 7px;
@@ -253,6 +384,10 @@
       white-space: nowrap;
       font-size: 12px;
       font-weight: 700;
+    }
+
+    .map-label::before {
+      display: none;
     }
 
     .side {
@@ -535,6 +670,10 @@
         min-height: 460px;
       }
 
+      .map-shell {
+        min-height: 460px;
+      }
+
       .side {
         grid-template-columns: 1fr;
       }
@@ -588,7 +727,14 @@
           <div class="stat"><span>Preamble lock</span><strong id="lock">98.7%</strong></div>
           <div class="stat"><span>Drift correction</span><strong id="drift">+2.4 ppm</strong></div>
         </div>
-        <div id="map" role="img" aria-label="Map of decoded aircraft positions around the receiver"></div>
+        <div class="map-shell sample" id="mapShell">
+          <div id="map" role="img" aria-label="Map of decoded aircraft positions around the receiver"></div>
+          <div class="sample-airspace" id="sampleAirspace"></div>
+          <div class="map-state" id="mapState">
+            <strong>Sample receiver view</strong>
+            <span>Showing representative ADS-B contacts until a local dump1090/readsb feed is connected.</span>
+          </div>
+        </div>
       </section>
 
       <aside class="side">
@@ -687,23 +833,54 @@
     let receiverMarker;
     const rangeRings = [];
     const markers = new Map();
+    let sampleMode = true;
+    let sampleInitialized = false;
 
-    const map = L.map("map", { zoomControl: false }).setView([receiver.lat, receiver.lon], 8);
+    const sampleAircraft = [
+      { icao: "A7C4B2", callsign: "UAL1427", altitude: 34000, lat: 49.57, lon: -123.05, speed: 458, heading: 164, rssi: -7.2, type: "B738" },
+      { icao: "C01F55", callsign: "ACA211", altitude: 28700, lat: 49.08, lon: -122.42, speed: 412, heading: 288, rssi: -9.5, type: "A320" },
+      { icao: "A3E91C", callsign: "SWA808", altitude: 12200, lat: 49.28, lon: -123.48, speed: 286, heading: 92, rssi: -4.8, type: "B737" },
+      { icao: "C0589A", callsign: "WJA716", altitude: 37100, lat: 50.05, lon: -122.9, speed: 476, heading: 141, rssi: -12.1, type: "B38M" },
+      { icao: "A92F6D", callsign: "FDX164", altitude: 25800, lat: 48.78, lon: -123.29, speed: 396, heading: 18, rssi: -15.4, type: "B763" }
+    ];
+
+    const sampleMessages = sampleAircraft.map((ac, index) => ({
+      time: new Date(Date.now() - index * 1900).toISOString(),
+      df: "DF17",
+      icao: ac.icao,
+      callsign: ac.callsign,
+      altitude: ac.altitude,
+      lat: ac.lat,
+      lon: ac.lon,
+      range_km: 0,
+      rssi_db: ac.rssi,
+      raw: "sample frame",
+      source: "static sample"
+    }));
+
+    const map = L.map("map", {
+      zoomControl: false,
+      preferCanvas: true,
+      zoomSnap: .25,
+      worldCopyJump: true
+    }).setView([receiver.lat, receiver.lon], 8);
     window.map = map;
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 12,
-      attribution: "&copy; OpenStreetMap"
+    const tileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      maxZoom: 13,
+      minZoom: 5,
+      detectRetina: true,
+      attribution: "&copy; OpenStreetMap &copy; CARTO"
     }).addTo(map);
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
     function drawReceiver() {
       if (receiverMarker) receiverMarker.remove();
       receiverMarker = L.circle([receiver.lat, receiver.lon], {
-        radius: 1200,
+        radius: sampleMode ? 3500 : 1200,
         color: "#54d7ff",
-        weight: 2,
+        weight: sampleMode ? 3 : 2,
         fillColor: "#54d7ff",
-        fillOpacity: .24
+        fillOpacity: sampleMode ? .38 : .24
       }).addTo(map).bindTooltip("Rooftop RTL-SDR");
       rangeRings.forEach((ring) => ring.remove());
       rangeRings.length = 0;
@@ -711,8 +888,8 @@
         rangeRings.push(L.circle([receiver.lat, receiver.lon], {
           radius,
           color: "#54d7ff",
-          weight: 1,
-          opacity: .42,
+          weight: sampleMode ? 2 : 1,
+          opacity: sampleMode ? .55 : .42,
           fillOpacity: 0
         }).addTo(map));
       });
@@ -729,7 +906,22 @@
 
     function resizeMap() {
       map.invalidateSize(true);
-      map.setView([receiver.lat, receiver.lon], map.getZoom(), { animate: false });
+      if (!sampleMode) {
+        map.setView([receiver.lat, receiver.lon], map.getZoom(), { animate: false });
+      }
+    }
+
+    function setMapState(mode, message) {
+      sampleMode = mode === "sample";
+      const shell = document.getElementById("mapShell");
+      if (shell) shell.classList.toggle("sample", sampleMode);
+      const state = document.getElementById("mapState");
+      state.classList.toggle("live", mode === "live");
+      if (mode === "sample") {
+        state.innerHTML = `<strong>Sample receiver view</strong><span>${message || "Representative contacts are shown until a local receiver feed is connected."}</span>`;
+      } else if (mode === "waiting") {
+        state.innerHTML = `<strong>Waiting for local receiver</strong><span>${message || "Start adsb_live_server.py with dump1090/readsb output to stream live aircraft positions."}</span>`;
+      }
     }
 
     function statusText(status) {
@@ -762,8 +954,8 @@
             icon: L.divIcon({
               html: markerHtml(ac),
               className: "",
-              iconSize: [30, 30],
-              iconAnchor: [15, 15]
+              iconSize: [34, 34],
+              iconAnchor: [17, 17]
             })
           }).addTo(map);
           marker.on("click", () => {
@@ -783,8 +975,8 @@
         marker.setIcon(L.divIcon({
           html: markerHtml(ac),
           className: "",
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
+          iconSize: [34, 34],
+          iconAnchor: [17, 17]
         }));
         marker.getTooltip().setContent(`${ac.callsign || ac.icao} · ${formatAltitude(ac.altitude)}`);
         if (visible && !map.hasLayer(marker)) marker.addTo(map);
@@ -817,9 +1009,64 @@
 
     function shortSourceLabel(source) {
       if (!source) return "waiting";
+      if (source.includes("sample")) return "sample playback";
       if (source.includes("aircraft.json")) return "dump1090 JSON";
       if (source.includes("SBS")) return "SBS TCP";
       return source;
+    }
+
+    function useSampleData() {
+      const firstSampleRender = !sampleInitialized;
+      sampleInitialized = true;
+      aircraft = sampleAircraft.map((ac) => ({
+        ...ac,
+        range: distanceKm(receiver.lat, receiver.lon, ac.lat, ac.lon)
+      }));
+      frameLog = sampleMessages.map((frame) => ({
+        ...frame,
+        range_km: distanceKm(receiver.lat, receiver.lon, frame.lat, frame.lon).toFixed(1)
+      }));
+      setMapState("sample");
+      drawReceiver();
+      renderSampleAirspace();
+      resizeMap();
+      syncMarkers();
+      renderRows();
+      renderLog();
+      const maxRange = Math.max(...aircraft.map((ac) => ac.range));
+      document.getElementById("contactsCount").textContent = aircraft.length;
+      document.getElementById("fps").textContent = "sample";
+      document.getElementById("maxRange").textContent = `${Math.round(maxRange)} km`;
+      document.getElementById("lock").textContent = "demo";
+      document.getElementById("drift").textContent = "sample playback";
+      document.getElementById("gain").textContent = "41.9 dB";
+      document.getElementById("noise").textContent = "-48 dBFS";
+      const chip = document.querySelector(".panel-head .chip");
+      if (chip) chip.textContent = "sample mode";
+      if (firstSampleRender) {
+        map.fitBounds(aircraft.map((ac) => [ac.lat, ac.lon]).concat([[receiver.lat, receiver.lon]]), {
+          padding: [46, 46],
+          maxZoom: 8
+        });
+      }
+    }
+
+    function renderSampleAirspace() {
+      const layer = document.getElementById("sampleAirspace");
+      if (!layer) return;
+      layer.innerHTML = sampleAircraft.map((ac) => {
+        const x = 50 + (ac.lon - receiver.lon) * 105;
+        const y = 50 - (ac.lat - receiver.lat) * 105;
+        const safeX = Math.max(12, Math.min(88, x));
+        const safeY = Math.max(14, Math.min(86, y));
+        return `<div class="sample-plane" style="left:${safeX}%;top:${safeY}%;--heading:${ac.heading}deg">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path fill="currentColor" d="M16 2 21 28 16 25 11 28z"/>
+            <path fill="currentColor" d="M5 18 16 14 27 18 25 21 16 19 7 21z"/>
+          </svg>
+          <span>${ac.callsign} · ${Math.round(ac.range || distanceKm(receiver.lat, receiver.lon, ac.lat, ac.lon))} km</span>
+        </div>`;
+      }).join("");
     }
 
     function renderRows() {
@@ -882,11 +1129,13 @@
         updateReceiver(aircraftData.receiver);
         aircraft = aircraftData.aircraft || [];
         frameLog = messageData.messages || [];
+        setMapState(aircraft.length ? "live" : "waiting");
         resizeMap();
         syncMarkers();
         renderRows();
         renderLog();
         const status = aircraftData.status || {};
+        sampleInitialized = false;
         statusText(status);
         document.getElementById("contactsCount").textContent = aircraftData.stats?.contacts ?? aircraft.length;
         document.getElementById("fps").textContent = status.connected ? "live" : "idle";
@@ -896,18 +1145,7 @@
         document.getElementById("gain").textContent = status.connected ? "input" : "--";
         document.getElementById("noise").textContent = status.last_update_age_s == null ? "--" : `${status.last_update_age_s}s age`;
       } catch (error) {
-        aircraft = [];
-        frameLog = [];
-        syncMarkers();
-        renderRows();
-        renderLog();
-        document.getElementById("contactsCount").textContent = "0";
-        document.getElementById("fps").textContent = "offline";
-        document.getElementById("maxRange").textContent = "0 km";
-        document.getElementById("lock").textContent = "no API";
-        document.getElementById("drift").textContent = "start backend";
-        document.getElementById("gain").textContent = "--";
-        document.getElementById("noise").textContent = "--";
+        useSampleData();
       }
     }
 

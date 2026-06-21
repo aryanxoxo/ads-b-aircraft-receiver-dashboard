@@ -2,7 +2,7 @@
 
 Lab console and hookup notes for a software-defined ADS-B receiver built around an RTL-SDR dongle, GNU Radio / dump1090-style decoding, and a Python logger.
 
-The browser dashboard is not a standalone aircraft data generator. It shows live values only after it is connected to decoded ADS-B output from real receiver software.
+The browser dashboard includes a clearly labeled sample view for public demonstration. Live values appear only after it is connected to decoded ADS-B output from real receiver software.
 
 ## Hardware Path
 
@@ -21,7 +21,7 @@ The browser dashboard is not a standalone aircraft data generator. It shows live
 5. The dashboard polls `/api/aircraft`, `/api/messages`, and `/api/status`.
 6. Decoded frames are archived to CSV under `adsb_logs/`.
 
-Until step 4 is connected, the dashboard intentionally shows zero contacts and a waiting/no-feed state.
+Until step 4 is connected, the public page shows sample contacts and a "sample mode" state so the interface can be reviewed without exposing private captures.
 
 ## Run With dump1090/readsb JSON
 
@@ -60,6 +60,7 @@ python adsb_live_server.py --port 8770 --sbs-host 127.0.0.1 --sbs-port 30003
 - Mode S message log
 - CSV/JSON export from the current browser session
 - SDR chain and hardware connection notes
+- Sample mode for public viewing when no local receiver API is connected
 
 ## Verification Checklist
 
