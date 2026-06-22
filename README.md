@@ -1,4 +1,6 @@
-# ADS-B Aircraft Receiver Lab
+﻿# ADS-B Aircraft Receiver Lab
+
+> Public archive note: this repository is a portfolio/demo-safe version prepared from private working repositories/materials; sensitive details, credentials, raw logs, and proprietary context are intentionally omitted.
 
 Lab console and hookup notes for a software-defined ADS-B receiver built around an RTL-SDR dongle, GNU Radio / dump1090-style decoding, and a Python logger.
 
